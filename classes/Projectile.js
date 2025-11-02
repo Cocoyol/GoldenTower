@@ -16,7 +16,7 @@ class Projectile {
         this.color = Utils.randomColor();
         
         // Tamaño
-        this.radius = 25;
+        this.radius = 20;
         
         // Rotación
         this.rotation = 0;

@@ -167,7 +167,7 @@ class Game {
      * Evento mouse down
      */
     onMouseDown(e) {
-        if (!this.isRunning || !this.currentProjectile || this.currentProjectile.isLaunched) {
+        if (!this.isRunning || !this.base || !this.currentProjectile || this.currentProjectile.isLaunched) {
             return;
         }
         
@@ -175,10 +175,11 @@ class Game {
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
         
-        // Verificar si el click está sobre el proyectil
-        if (this.currentProjectile.containsPoint(x, y)) {
+        // Verificar si el click ocurrió sobre la base para habilitar el arrastre
+        if (this.base.containsPoint(x, y)) {
+            const basePos = this.base.getPosition();
             this.isDragging = true;
-            this.dragStart = { x, y };
+            this.dragStart = { x: basePos.x, y: basePos.y };
             this.dragCurrent = { x, y };
             this.canvas.classList.add('grabbing');
         }
@@ -207,8 +208,9 @@ class Game {
         this.canvas.classList.remove('grabbing');
         
         // Calcular fuerza y dirección
-        const dx = this.dragStart.x - this.dragCurrent.x;
-        const dy = this.dragStart.y - this.dragCurrent.y;
+        const basePos = this.base.getPosition(); // Usar siempre el centro de la base como origen
+        const dx = basePos.x - this.dragCurrent.x;
+        const dy = basePos.y - this.dragCurrent.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
         
         // Mínima distancia para lanzar
@@ -351,8 +353,10 @@ class Game {
      * Renderiza el indicador de arrastre
      */
     renderDragIndicator() {
-        const dx = this.dragStart.x - this.dragCurrent.x;
-        const dy = this.dragStart.y - this.dragCurrent.y;
+        const basePos = this.base.getPosition();
+        // Anclar el indicador al centro de la base para que la referencia visual sea coherente
+        const dx = basePos.x - this.dragCurrent.x;
+        const dy = basePos.y - this.dragCurrent.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
         
         if (distance < 20) return;
@@ -368,15 +372,15 @@ class Game {
         this.ctx.lineWidth = 3;
         this.ctx.setLineDash([10, 5]);
         this.ctx.beginPath();
-        this.ctx.moveTo(this.dragStart.x, this.dragStart.y);
+        this.ctx.moveTo(basePos.x, basePos.y);
         this.ctx.lineTo(this.dragCurrent.x, this.dragCurrent.y);
         this.ctx.stroke();
         
         // Flecha en la dirección opuesta (dirección del lanzamiento)
         const angle = Math.atan2(dy, dx);
         const arrowLength = 30;
-        const arrowX = this.dragStart.x + Math.cos(angle) * (distance + 20);
-        const arrowY = this.dragStart.y + Math.sin(angle) * (distance + 20);
+        const arrowX = basePos.x + Math.cos(angle) * (distance + 20);
+        const arrowY = basePos.y + Math.sin(angle) * (distance + 20);
         
         this.ctx.setLineDash([]);
         this.ctx.fillStyle = 'rgba(255, 215, 0, 0.9)';
@@ -399,8 +403,8 @@ class Game {
         this.ctx.textAlign = 'center';
         this.ctx.fillText(
             `${normalizedForce}%`,
-            this.dragCurrent.x,
-            this.dragCurrent.y - 20
+                    basePos.x,
+                    basePos.y - 30
         );
         
         this.ctx.restore();

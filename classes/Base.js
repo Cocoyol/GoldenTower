@@ -5,7 +5,7 @@ class Base {
     constructor(x, y) {
         this.x = x;
         this.y = y;
-        this.rings = 5; // Número de círculos concéntricos
+        this.rings = 4; // Número de círculos concéntricos
         this.maxRadius = 25;
         this.colors = ['#FFD700', '#FFA500', '#FF8C00'];
     }
@@ -52,5 +52,12 @@ class Base {
      */
     getPosition() {
         return { x: this.x, y: this.y };
+    }
+
+    /**
+     * Verifica si un punto cae dentro del área interactiva de la base
+     */
+    containsPoint(px, py) {
+        return Utils.pointInCircle(px, py, this.x, this.y, this.maxRadius);
     }
 }
