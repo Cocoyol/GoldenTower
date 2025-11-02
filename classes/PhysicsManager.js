@@ -2,7 +2,7 @@
  * Gestor de física usando Matter.js
  */
 class PhysicsManager {
-    constructor(width, height) {
+    constructor(stage) {
         // Crear motor de física
         this.engine = Matter.Engine.create();
         this.world = this.engine.world;
@@ -12,10 +12,7 @@ class PhysicsManager {
         this.engine.gravity.y = 0;
         this.engine.gravity.x = 0;
         
-        // Dimensiones del escenario con buffer
-        this.width = width;
-        this.height = height;
-        this.buffer = 200; // Margen fuera de pantalla
+        this.stage = stage;
         
         // Listas de cuerpos
         this.projectileBodies = [];
@@ -131,15 +128,12 @@ class PhysicsManager {
      * Limpia cuerpos que están fuera del escenario
      */
     cleanupBodies() {
-        const buffer = this.buffer;
-        
         // Limpiar proyectiles
         for (let i = this.projectileBodies.length - 1; i >= 0; i--) {
             const body = this.projectileBodies[i];
             const pos = body.position;
             
-            if (pos.x < -buffer || pos.x > this.width + buffer ||
-                pos.y < -buffer || pos.y > this.height + buffer) {
+            if (this.stage.isOutsideStage(pos.x, pos.y)) {
                 Matter.World.remove(this.world, body);
                 this.projectileBodies.splice(i, 1);
             }
@@ -150,8 +144,7 @@ class PhysicsManager {
             const body = this.enemyBodies[i];
             const pos = body.position;
             
-            if (pos.x < -buffer || pos.x > this.width + buffer ||
-                pos.y < -buffer || pos.y > this.height + buffer) {
+            if (this.stage.isOutsideStage(pos.x, pos.y)) {
                 Matter.World.remove(this.world, body);
                 this.enemyBodies.splice(i, 1);
             }
@@ -183,6 +176,13 @@ class PhysicsManager {
         const velocity = body.velocity;
         const speed = Math.sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
         return speed < threshold;
+    }
+
+    /**
+     * Notifica al gestor que el escenario cambió de tamaño.
+     */
+    onStageResized() {
+        // Los límites se consultan directamente del escenario, por lo que no se requiere trabajo adicional.
     }
 
     /**

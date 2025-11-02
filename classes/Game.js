@@ -1,3 +1,19 @@
+const DEFAULT_STAGE_MARGIN = {
+    top: 50,
+    right: 50,
+    bottom: 50,
+    left: 50
+};
+
+const DEFAULT_STAGE_BORDER_OPTIONS = {
+    enabled: false,
+    color: 'rgba(255, 215, 0, 0.35)',
+    lineWidth: 2,
+    dash: [12, 8],
+    area: 'view',
+    inset: 12
+};
+
 /**
  * Clase principal del juego
  */
@@ -8,6 +24,16 @@ class Game {
         
         // Configurar tamaño del canvas
         this.setupCanvas();
+
+        // Escenario extendido
+        this.stage = new Stage(
+            this.canvas.width,
+            this.canvas.height,
+            {
+                margin: DEFAULT_STAGE_MARGIN,
+                border: DEFAULT_STAGE_BORDER_OPTIONS
+            }
+        );
         
         // Estado del juego
         this.isRunning = false;
@@ -52,6 +78,12 @@ class Game {
         
         this.width = this.canvas.width;
         this.height = this.canvas.height;
+
+        if (this.stage) {
+            this.stage.updateViewSize(this.canvas.width, this.canvas.height);
+        }
+
+        console.log(`Canvas size set to: ${this.width}x${this.height}`);
     }
 
     /**
@@ -78,13 +110,14 @@ class Game {
         this.isRunning = true;
         this.statistics.reset();
         
-        // Inicializar física
-        this.physicsManager = new PhysicsManager(this.width, this.height);
+        // Inicializar física con límites centralizados
+        this.physicsManager = new PhysicsManager(this.stage);
         this.physicsManager.onCollision = (bodyA, bodyB) => this.onCollision(bodyA, bodyB);
         
         // Crear la base en la posición correcta (3/10 desde abajo)
-        const baseX = this.width / 2;
-        const baseY = this.height * 0.7; // 7/10 desde arriba = 3/10 desde abajo
+        const viewBounds = this.stage.getViewBounds();
+        const baseX = this.stage.getViewCenter().x;
+        const baseY = viewBounds.top + this.stage.getViewHeight() * 0.7; // 7/10 desde arriba = 3/10 desde abajo
         this.base = new Base(baseX, baseY);
         
         // Crear el primer proyectil
@@ -130,19 +163,22 @@ class Game {
      * Genera un enemigo aleatorio con objetivo en la parte baja del escenario
      */
     spawnEnemy() {
-        const x = Utils.random(50, this.width - 50);
-        const y = -50; // Fuera de la pantalla arriba
+        const stageBounds = this.stage.getStageBounds();
+        const stageWidth = stageBounds.right - stageBounds.left;
+
         const size = Utils.random(25, 40);
-        
-        // Calcular punto objetivo con variación del ±10% del centro horizontal
-        const centerX = this.width / 2;
-        const variation = this.width * 0.1; // 10% del ancho
-        const targetX = centerX + Utils.random(-variation, variation);
-        const targetY = this.height + 100; // Parte baja del escenario
-        
-        // Obtener enemigo del pool
-        const enemy = this.enemyPool.acquire(x, y, targetX, targetY, size, this.physicsManager);
-        
+        const spawnX = Utils.random(stageBounds.left + size, stageBounds.right - size);
+        const spawnY = stageBounds.top + size; // Aparecen en la parte superior del escenario (fuera de la vista por el margen)
+
+        const centerX = stageBounds.left + stageWidth / 2;
+        const xVariation = stageWidth * 0.1; // Variación horizontal del ±10%
+        let targetX = centerX + Utils.random(-xVariation, xVariation);
+        targetX = Utils.clamp(targetX, stageBounds.left + size, stageBounds.right - size);
+
+        const targetY = stageBounds.bottom; // El objetivo es el fondo del escenario
+
+        const enemy = this.enemyPool.acquire(spawnX, spawnY, targetX, targetY, size, this.physicsManager);
+
         this.statistics.incrementEnemies();
     }
 
@@ -248,8 +284,7 @@ class Game {
         this.setupCanvas();
         
         if (this.physicsManager) {
-            this.physicsManager.width = this.width;
-            this.physicsManager.height = this.height;
+            this.physicsManager.onStageResized();
         }
     }
 
@@ -278,7 +313,7 @@ class Game {
                 }
                 
                 // Verificar si está fuera del escenario
-                if (this.currentProjectile.isOutOfBounds(this.width, this.height)) {
+                if (this.currentProjectile.isOutOfBounds(this.stage)) {
                     this.createNewProjectile();
                 }
                 // Verificar si está estático
@@ -304,7 +339,7 @@ class Game {
             enemy.update();
             
             // Eliminar enemigos fuera del escenario
-            if (enemy.isOutOfBounds(this.width, this.height)) {
+            if (enemy.isOutOfBounds(this.stage)) {
                 this.enemyPool.release(enemy, this.physicsManager);
             }
         }
@@ -328,7 +363,11 @@ class Game {
     render() {
         // Limpiar canvas
         this.ctx.fillStyle = '#0a0a15';
-        this.ctx.fillRect(0, 0, this.width, this.height);
+        const viewBounds = this.stage.getViewBounds();
+        this.ctx.fillRect(viewBounds.left, viewBounds.top, this.stage.getViewWidth(), this.stage.getViewHeight());
+
+        // Borde opcional del escenario
+        this.stage.renderBorder(this.ctx);
         
         // Dibujar base
         if (this.base) {

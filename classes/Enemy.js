@@ -18,6 +18,9 @@ class Enemy {
         this.targetX = targetX;
         this.targetY = targetY;
 
+        // Calcular orientación inicial hacia el objetivo
+        const headingAngle = Math.atan2(this.targetY - this.y, this.targetX - this.x);
+
         // Salud (fija, para futuras expansiones)
         this.health = 100;
 
@@ -41,8 +44,8 @@ class Enemy {
             0
         );
 
-        // Rotación inicial aleatoria
-        this.rotation = Math.random() * Math.PI * 2;
+        // Rotación inicial apuntando al objetivo
+        this.rotation = headingAngle;
 
         // Velocidad angular (rotación) - aleatoria para cada enemigo
         // Menor velocidad angular = giros más lentos
@@ -53,7 +56,7 @@ class Enemy {
         this.thrustPower = 0.00001 * this.thrustFactor; // Fuerza de propulsión base
 
         // Dirección del frente (ángulo hacia donde apunta)
-        this.frontAngle = Math.atan2(this.targetY - this.y, this.targetX - this.x);
+        this.frontAngle = headingAngle;
 
         // Física
         this.physicsBody = null;
@@ -93,6 +96,10 @@ class Enemy {
             this.mass,
             this.angularVelocity
         );
+
+        if (this.physicsBody) {
+            Matter.Body.setAngle(this.physicsBody, this.rotation);
+        }
         this.isActive = true;
     }
 
@@ -195,9 +202,12 @@ class Enemy {
     /**
      * Verifica si está fuera del escenario
      */
-    isOutOfBounds(width, height, buffer = 200) {
-        return this.x < -buffer || this.x > width + buffer ||
-            this.y < -buffer || this.y > height + buffer;
+    isOutOfBounds(stage, extraBuffer = 0) {
+        const margin = stage.getMargin();
+        const horizontalMargin = Math.max(margin.left, margin.right);
+        const verticalMargin = Math.max(margin.top, margin.bottom);
+        const buffer = Math.max(extraBuffer, Math.max(horizontalMargin, verticalMargin));
+        return stage.isOutsideStage(this.x, this.y, buffer);
     }
 
     /**

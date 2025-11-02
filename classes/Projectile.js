@@ -172,8 +172,14 @@ class Projectile {
     /**
      * Verifica si está fuera del escenario
      */
-    isOutOfBounds(width, height, buffer = 100) {
-        return this.x < -buffer || this.x > width + buffer ||
-               this.y < -buffer || this.y > height + buffer;
+    isOutOfBounds(stage, buffer = 0) {
+        const bounds = stage.getStageBounds();
+         const horizontalBuffer = Math.max(buffer, 0);
+         const verticalBuffer = Math.max(buffer, 0);
+
+         return this.x < bounds.left - horizontalBuffer ||
+             this.x > bounds.right + horizontalBuffer ||
+             this.y < bounds.top - verticalBuffer ||
+             this.y > bounds.bottom + verticalBuffer;
     }
 }
