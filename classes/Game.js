@@ -166,20 +166,44 @@ class Game {
         const stageBounds = this.stage.getStageBounds();
         const stageWidth = stageBounds.right - stageBounds.left;
 
-        const size = Utils.random(25, 40);
-        const spawnX = Utils.random(stageBounds.left + size, stageBounds.right - size);
-        const spawnY = stageBounds.top + size; // Aparecen en la parte superior del escenario (fuera de la vista por el margen)
-
         const centerX = stageBounds.left + stageWidth / 2;
         const xVariation = stageWidth * 0.1; // Variación horizontal del ±10%
-        let targetX = centerX + Utils.random(-xVariation, xVariation);
-        targetX = Utils.clamp(targetX, stageBounds.left + size, stageBounds.right - size);
+        const maxAttempts = 5;
 
-        const targetY = stageBounds.bottom; // El objetivo es el fondo del escenario
+        for (let attempt = 0; attempt < maxAttempts; attempt++) {
+            const size = Utils.random(25, 40);
+            const spawnX = Utils.random(stageBounds.left + size, stageBounds.right - size);
+            const spawnY = stageBounds.top + size; // Aparecen en la parte superior del escenario (fuera de la vista por el margen)
 
-        const enemy = this.enemyPool.acquire(spawnX, spawnY, targetX, targetY, size, this.physicsManager);
+            let targetX = centerX + Utils.random(-xVariation, xVariation);
+            targetX = Utils.clamp(targetX, stageBounds.left + size, stageBounds.right - size);
 
-        this.statistics.incrementEnemies();
+            const targetY = stageBounds.bottom; // El objetivo es el fondo del escenario
+
+            const enemy = this.enemyPool.acquire(spawnX, spawnY, targetX, targetY, size);
+
+            const absoluteVertices = enemy.vertices.map(v => ({
+                x: spawnX + v.x,
+                y: spawnY + v.y
+            }));
+
+            const canPlace = this.physicsManager.canPlaceEnemy(
+                spawnX,
+                spawnY,
+                absoluteVertices,
+                enemy.rotation
+            );
+
+            if (canPlace) {
+                this.enemyPool.activate(enemy, this.physicsManager);
+                this.statistics.incrementEnemies();
+                return enemy;
+            }
+
+            this.enemyPool.cancel(enemy, this.physicsManager);
+        }
+
+        return null;
     }
 
     /**

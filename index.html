@@ -100,8 +100,19 @@
         </div>
     </div>
 
+    <!-- poly-decomp - Librería para descomponer polígonos cóncavos -->
+    <script src="lib/decomp.min.js"></script>
+    
     <!-- Matter.js - Librería de física 2D -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+    <script src="lib/matter.min.js"></script>
+    
+    <!-- Configurar poly-decomp para Matter.js -->
+    <script>
+        // Configurar la librería de descomposición para vértices cóncavos
+        if (typeof decomp !== 'undefined') {
+            Matter.Common.setDecomp(decomp);
+        }
+    </script>
     
     <!-- Clases del juego -->
     <script src="classes/utils.js"></script>

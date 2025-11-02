@@ -108,10 +108,38 @@ class PhysicsManager {
     }
 
     /**
+     * Verifica si un conjunto de vértices puede colocarse sin colisionar con enemigos activos
+     */
+    canPlaceEnemy(x, y, vertices, rotation = 0) {
+        if (this.enemyBodies.length === 0) {
+            return true;
+        }
+
+        const tempBody = Matter.Bodies.fromVertices(x, y, vertices, {
+            inertia: Infinity
+        });
+
+        // Alinear el cuerpo temporal con la rotación esperada
+        Matter.Body.setAngle(tempBody, rotation);
+        Matter.Body.setPosition(tempBody, { x, y });
+
+        for (const enemyBody of this.enemyBodies) {
+            // Usar Collision.collides en lugar de SAT.collides (deprecado desde v0.18)
+            const collision = Matter.Collision.collides(tempBody, enemyBody);
+            if (collision && collision.collided) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * Aplica una fuerza al proyectil
      */
-    launchProjectile(body, forceX, forceY) {
+    launchProjectile(body, forceX, forceY, rotationSpeed = 0.1) {
         Matter.Body.setVelocity(body, { x: forceX, y: forceY });
+        Matter.Body.setAngularVelocity(body, rotationSpeed);
     }
 
     /**

@@ -25,8 +25,8 @@ class Enemy {
         this.health = 100;
 
         // Factor de peso (afecta masa y color)
-        // Valor entre 0.5 y 1.5, donde mayor = más pesado y oscuro
-        this.weightFactor = Utils.random(0.8, 4);
+        // Valor entre 0.8 y 4.5, donde mayor = más pesado y oscuro
+        this.weightFactor = Utils.random(0.8, 4.5);
 
         // Calcular masa basada en tamaño y factor de peso
         this.mass = (this.size / 30) * this.weightFactor * 0.01;
@@ -72,9 +72,9 @@ class Enemy {
      * Más liviano = más claro (gris claro)
      */
     calculateColorFromWeight() {
-        // Mapear weightFactor (0.5-1.5) a valores de gris (180-80)
-        // 180 = gris claro (#B4B4B4), 80 = gris oscuro (#505050)
-        const grayValue = Math.floor(Utils.map(this.weightFactor, 0.5, 1.5, 180, 80));
+        // Mapear weightFactor (0-5) a valores de gris (196-64)
+        // 196 = gris claro (#B4B4B4), 64 = gris oscuro (#505050)
+        const grayValue = Math.floor(Utils.map(this.weightFactor, 0, 5, 196, 64));
         const hex = grayValue.toString(16).padStart(2, '0');
         return `#${hex}${hex}${hex}`;
     }
@@ -243,7 +243,7 @@ class EnemyPool {
     /**
      * Obtiene un enemigo del pool o crea uno nuevo
      */
-    acquire(x, y, targetX, targetY, size, physicsManager) {
+    acquire(x, y, targetX, targetY, size) {
         let enemy;
 
         if (this.pool.length > 0) {
@@ -254,14 +254,45 @@ class EnemyPool {
             // Crear nuevo enemigo si el pool está vacío
             enemy = new Enemy(x, y, targetX, targetY, size);
         }
+        return enemy;
+    }
 
-        // Crear cuerpo físico
+    /**
+     * Activa a un enemigo creando su cuerpo físico y agregándolo a la lista de activos
+     */
+    activate(enemy, physicsManager) {
+        if (!enemy) return null;
+
         enemy.createPhysicsBody(physicsManager);
 
-        // Agregar a lista de activos
-        this.active.push(enemy);
+        if (!this.active.includes(enemy)) {
+            this.active.push(enemy);
+        }
 
         return enemy;
+    }
+
+    /**
+     * Cancela un enemigo adquirido que no llegó a activarse
+     */
+    cancel(enemy, physicsManager) {
+        if (!enemy) return;
+
+        const index = this.active.indexOf(enemy);
+        if (index > -1) {
+            this.active.splice(index, 1);
+        }
+
+        if (enemy.physicsBody && physicsManager) {
+            physicsManager.removeBody(enemy.physicsBody);
+        }
+
+        enemy.destroy();
+        enemy.physicsBody = null;
+
+        if (!this.pool.includes(enemy)) {
+            this.pool.push(enemy);
+        }
     }
 
     /**

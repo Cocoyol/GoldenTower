@@ -25,6 +25,9 @@ class Projectile {
         // Rotación
         this.rotation = 0;
         this.rotationSpeed = 0.02; // Rotación lenta inicial
+
+        // Rotación al lanzar
+        this.launchRotationSpeed = 0.15;
         
         // Estado
         this.isLaunched = false;
@@ -152,7 +155,7 @@ class Projectile {
         }
         
         // Aplicar fuerza
-        physicsManager.launchProjectile(this.physicsBody, forceX, forceY);
+        physicsManager.launchProjectile(this.physicsBody, forceX, forceY, this.launchRotationSpeed);
     }
 
     /**
