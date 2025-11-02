@@ -18,6 +18,10 @@ class Projectile {
         // Tamaño
         this.radius = 20;
         
+        // Masa del proyectil (varía con el tamaño y forma)
+        // Círculos = más pesados, polígonos = más ligeros según número de lados
+        this.calculateMass();
+        
         // Rotación
         this.rotation = 0;
         this.rotationSpeed = 0.02; // Rotación lenta inicial
@@ -34,6 +38,37 @@ class Projectile {
         
         // Efecto glow
         this.glowIntensity = 1;
+    }
+
+    /**
+     * Calcula la masa del proyectil según su forma
+     */
+    calculateMass() {
+        // Factor base de masa según la forma
+        let shapeFactor;
+        switch (this.shape) {
+            case 'circle':
+                shapeFactor = 1.2; // Círculos más densos
+                break;
+            case 'triangle':
+                shapeFactor = 0.8; // Triángulos más ligeros
+                break;
+            case 'square':
+                shapeFactor = 1.0; // Cuadrados equilibrados
+                break;
+            case 'pentagon':
+                shapeFactor = 1.1;
+                break;
+            case 'hexagon':
+                shapeFactor = 1.15;
+                break;
+            default:
+                shapeFactor = 1.0;
+        }
+        
+        // Masa proporcional al tamaño y forma
+        // Similar a los enemigos: (tamaño/base) * factor
+        this.mass = (this.radius / 20) * shapeFactor * 0.015; // 0.015 para que sea comparable a enemigos
     }
 
     /**
@@ -106,14 +141,14 @@ class Projectile {
         
         // Crear cuerpo físico
         if (this.shape === 'circle') {
-            this.physicsBody = physicsManager.createProjectileBody(this.x, this.y, null, this.radius);
+            this.physicsBody = physicsManager.createProjectileBody(this.x, this.y, null, this.radius, this.mass);
         } else {
             // Convertir vértices locales a coordenadas absolutas para Matter.js
             const absoluteVertices = this.vertices.map(v => ({
                 x: this.x + v.x,
                 y: this.y + v.y
             }));
-            this.physicsBody = physicsManager.createProjectileBody(this.x, this.y, absoluteVertices);
+            this.physicsBody = physicsManager.createProjectileBody(this.x, this.y, absoluteVertices, null, this.mass);
         }
         
         // Aplicar fuerza

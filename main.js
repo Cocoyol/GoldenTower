@@ -2,6 +2,9 @@
  * Script principal - Punto de entrada del juego
  */
 
+// Configuración global
+const SHOW_ENEMY_DIRECTION_ARROWS = true; // Mostrar/ocultar flechas rojas de dirección de enemigos
+
 let game = null;
 
 // Referencias a elementos DOM

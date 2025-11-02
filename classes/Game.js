@@ -16,7 +16,7 @@ class Game {
         // Elementos del juego
         this.base = null;
         this.currentProjectile = null;
-        this.enemies = [];
+        this.enemyPool = new EnemyPool(20);
         
         // Sistemas
         this.physicsManager = null;
@@ -106,7 +106,9 @@ class Game {
         }
         
         // Limpiar
-        this.enemies = [];
+        if (this.enemyPool && this.physicsManager) {
+            this.enemyPool.clear(this.physicsManager);
+        }
         this.currentProjectile = null;
         this.particleSystem.clear();
         
@@ -125,16 +127,21 @@ class Game {
     }
 
     /**
-     * Genera un enemigo aleatorio
+     * Genera un enemigo aleatorio con objetivo en la parte baja del escenario
      */
     spawnEnemy() {
         const x = Utils.random(50, this.width - 50);
         const y = -50; // Fuera de la pantalla arriba
         const size = Utils.random(25, 40);
         
-        const enemy = new Enemy(x, y, size);
-        enemy.createPhysicsBody(this.physicsManager);
-        this.enemies.push(enemy);
+        // Calcular punto objetivo con variación del ±10% del centro horizontal
+        const centerX = this.width / 2;
+        const variation = this.width * 0.1; // 10% del ancho
+        const targetX = centerX + Utils.random(-variation, variation);
+        const targetY = this.height + 100; // Parte baja del escenario
+        
+        // Obtener enemigo del pool
+        const enemy = this.enemyPool.acquire(x, y, targetX, targetY, size, this.physicsManager);
         
         this.statistics.incrementEnemies();
     }
@@ -291,16 +298,14 @@ class Game {
         }
         
         // Actualizar enemigos
-        for (let i = this.enemies.length - 1; i >= 0; i--) {
-            const enemy = this.enemies[i];
+        const activeEnemies = this.enemyPool.getActive();
+        for (let i = activeEnemies.length - 1; i >= 0; i--) {
+            const enemy = activeEnemies[i];
             enemy.update();
             
             // Eliminar enemigos fuera del escenario
             if (enemy.isOutOfBounds(this.width, this.height)) {
-                if (enemy.physicsBody) {
-                    this.physicsManager.removeBody(enemy.physicsBody);
-                }
-                this.enemies.splice(i, 1);
+                this.enemyPool.release(enemy, this.physicsManager);
             }
         }
         
@@ -331,8 +336,9 @@ class Game {
         }
         
         // Dibujar enemigos
-        for (const enemy of this.enemies) {
-            enemy.render(this.ctx);
+        const activeEnemies = this.enemyPool.getActive();
+        for (const enemy of activeEnemies) {
+            enemy.render(this.ctx, SHOW_ENEMY_DIRECTION_ARROWS);
         }
         
         // Dibujar proyectil actual

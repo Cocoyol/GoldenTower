@@ -7,7 +7,8 @@ class PhysicsManager {
         this.engine = Matter.Engine.create();
         this.world = this.engine.world;
         
-        // Desactivar gravedad (movimiento en línea recta)
+        // Gravedad desactivada - los enemigos usan propulsión autónoma
+        // y los proyectiles se mueven en trayectorias lineales
         this.engine.gravity.y = 0;
         this.engine.gravity.x = 0;
         
@@ -51,30 +52,33 @@ class PhysicsManager {
     }
 
     /**
-     * Crea un cuerpo de proyectil
+     * Crea un cuerpo de proyectil con masa explícita
      */
-    createProjectileBody(x, y, vertices, radius = null) {
+    createProjectileBody(x, y, vertices, radius = null, mass = 0.015) {
         let body;
         
         if (radius) {
             // Círculo
             body = Matter.Bodies.circle(x, y, radius, {
                 label: 'projectile',
-                restitution: 0.8,
-                friction: 0.01,
-                density: 0.01,
+                restitution: 0.7, // Rebote moderado
+                friction: 0.02,
+                density: mass, // Usar masa como densidad inicial
                 frictionAir: 0.001
             });
         } else {
             // Polígono
             body = Matter.Bodies.fromVertices(x, y, vertices, {
                 label: 'projectile',
-                restitution: 0.8,
-                friction: 0.01,
-                density: 0.01,
+                restitution: 0.7, // Rebote moderado
+                friction: 0.02,
+                density: mass, // Usar masa como densidad inicial
                 frictionAir: 0.001
             });
         }
+        
+        // Establecer masa explícitamente para garantizar interacción física correcta
+        Matter.Body.setMass(body, mass);
         
         Matter.World.add(this.world, body);
         this.projectileBodies.push(body);
@@ -83,19 +87,22 @@ class PhysicsManager {
     }
 
     /**
-     * Crea un cuerpo de enemigo
+     * Crea un cuerpo de enemigo con propulsión autónoma
      */
-    createEnemyBody(x, y, vertices) {
+    createEnemyBody(x, y, vertices, mass = 0.01, angularVelocity = 0.02) {
         const body = Matter.Bodies.fromVertices(x, y, vertices, {
             label: 'enemy',
             restitution: 0.6,
-            friction: 0.02,
-            density: 0.005,
-            frictionAir: 0.002
+            friction: 0.05, // Fricción moderada para resistencia
+            density: mass,
+            frictionAir: 0.002, // Resistencia del aire baja
+            inertia: Infinity // Evita rotación excesiva por colisiones
         });
         
-        // Establecer velocidad descendente
-        Matter.Body.setVelocity(body, { x: 0, y: 0.5 });
+        // Establecer masa explícitamente
+        Matter.Body.setMass(body, mass);
+        
+        // No establecer velocidad inicial - el enemigo usará propulsión
         
         Matter.World.add(this.world, body);
         this.enemyBodies.push(body);
