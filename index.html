@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Juego de Resortera 2D</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="gameContainer">
+        <!-- Canvas principal del juego -->
+        <canvas id="gameCanvas"></canvas>
+        
+        <!-- HUD - Estadísticas -->
+        <div id="hud" class="hidden">
+            <h3>Estadísticas</h3>
+            <div class="stat">
+                <span class="stat-label">Proyectiles:</span>
+                <span class="stat-value" id="projectileCount">0</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Enemigos:</span>
+                <span class="stat-value" id="enemyCount">0</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Colisiones:</span>
+                <span class="stat-value" id="collisionCount">0</span>
+            </div>
+        </div>
+
+        <!-- Indicador de fuerza -->
+        <div id="forceIndicator"></div>
+
+        <!-- Pantalla de inicio -->
+        <div id="startScreen">
+            <h1>Golden Tower 🏵️</h1>
+            <div class="instructions">
+                <ul>
+                    <li>Arrastra el proyectil en dirección opuesta al lanzamiento</li>
+                    <li>Colisiona con los enemigos descendentes</li>
+                    <li>Mayor distancia = Mayor fuerza</li>
+                    <li>¡Diviértete!</li>
+                </ul>
+            </div>
+            <button class="btn btn-start" id="btnStart">Iniciar Juego</button>
+        </div>
+
+        <!-- Controles del juego - Esquina superior derecha -->
+        <div class="game-controls-top hidden" id="gameControls">
+            <button class="btn-icon" id="btnOptions" title="Opciones">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="3" width="20" height="14" rx="2"/>
+                    <path d="M8 21h8"/>
+                    <path d="M12 17v4"/>
+                </svg>
+            </button>
+            <button class="btn-icon" id="btnRestart" title="Reiniciar">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+                </svg>
+            </button>
+            <button class="btn-icon" id="btnHome" title="Menú Principal">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                    <polyline points="9 22 9 12 15 12 15 22"/>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Pantalla de opciones -->
+        <div id="optionsScreen" class="modal hidden">
+            <div class="modal-content">
+                <h2>⚙️ Opciones</h2>
+                <div class="modal-body">
+                    <p>Configuración del juego</p>
+                    <div class="options-placeholder">
+                        <span>Funcionalidades próximamente...</span>
+                    </div>
+                </div>
+                <div class="modal-buttons">
+                    <button class="btn btn-primary" id="btnOptionsClose">Volver al Juego</button>
+                    <button class="btn btn-secondary" id="btnOptionsToMenu">Ir al Menú Principal</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pantalla de confirmación para reiniciar -->
+        <div id="restartConfirmScreen" class="modal hidden">
+            <div class="modal-content">
+                <h2>♻️ Reiniciar Partida</h2>
+                <div class="modal-body">
+                    <p>¿Estás seguro de que deseas reiniciar la partida actual?</p>
+                    <p class="warning">Se perderá el progreso actual</p>
+                </div>
+                <div class="modal-buttons">
+                    <button class="btn btn-primary" id="btnRestartConfirm">Sí, Reiniciar</button>
+                    <button class="btn btn-secondary" id="btnRestartCancel">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Matter.js - Librería de física 2D -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+    
+    <!-- Clases del juego -->
+    <script src="classes/utils.js"></script>
+    <script src="classes/Statistics.js"></script>
+    <script src="classes/ParticleSystem.js"></script>
+    <script src="classes/PhysicsManager.js"></script>
+    <script src="classes/Base.js"></script>
+    <script src="classes/Projectile.js"></script>
+    <script src="classes/Enemy.js"></script>
+    <script src="classes/Game.js"></script>
+    
+    <!-- Script principal -->
+    <script src="main.js"></script>
+</body>
+</html>
