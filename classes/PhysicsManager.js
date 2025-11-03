@@ -92,7 +92,7 @@ class PhysicsManager {
             restitution: 0.6,
             friction: 0.05, // Fricción moderada para resistencia
             density: mass,
-            frictionAir: 0.002, // Resistencia del aire baja
+            frictionAir: 0.045, // Fricción del aire aumentada para normalizar velocidad
             inertia: Infinity // Evita rotación excesiva por colisiones
         });
         

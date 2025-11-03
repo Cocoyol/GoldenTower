@@ -25,14 +25,16 @@ class Enemy {
         this.health = 100;
 
         // Factor de peso (afecta masa y color)
-        // Valor entre 0.8 y 4.5, donde mayor = más pesado y oscuro
-        this.weightFactor = Utils.random(0.8, 4.5);
+        // Mayor = más pesado y oscuro
+        const minWeightFactor = 0.8;
+        const maxWeightFactor = 2.0;
+        this.weightFactor = Utils.random(minWeightFactor, maxWeightFactor);
 
         // Calcular masa basada en tamaño y factor de peso
         this.mass = (this.size / 30) * this.weightFactor * 0.01;
 
         // Color basado en el peso (más oscuro = más pesado)
-        this.color = this.calculateColorFromWeight();
+        this.color = this.calculateColorFromWeight(minWeightFactor, maxWeightFactor);
 
         // Generar polígono irregular (4-8 vértices)
         const sides = Utils.randomInt(4, 8);
@@ -49,11 +51,12 @@ class Enemy {
 
         // Velocidad angular (rotación) - aleatoria para cada enemigo
         // Menor velocidad angular = giros más lentos
-        this.angularVelocity = Utils.random(0.01, 0.03);
+        this.angularVelocity = Utils.random(0.01, 0.018);
 
-        // Factor de velocidad de propulsión (variación pequeña)
-        this.thrustFactor = Utils.random(0.4, 0.6);
-        this.thrustPower = 0.00001 * this.thrustFactor; // Fuerza de propulsión base
+        // Velocidad de propulsión deseada (velocidad límite constante)
+        // Los enemigos mantendrán esta velocidad, no acelerarán indefinidamente
+        this.propulsionSpeed = Utils.random(0.3, 0.5); // px/frame
+        this.propulsionForce = 0.0001; // Fuerza aplicada para mantener velocidad
 
         // Dirección del frente (ángulo hacia donde apunta)
         this.frontAngle = headingAngle;
@@ -71,10 +74,10 @@ class Enemy {
      * Más pesado = más oscuro (gris oscuro)
      * Más liviano = más claro (gris claro)
      */
-    calculateColorFromWeight() {
-        // Mapear weightFactor (0-5) a valores de gris (196-64)
+    calculateColorFromWeight(minWeight, maxWeight) {
+        // Mapear weightFactor según rango a valores de gris (196-64)
         // 196 = gris claro (#B4B4B4), 64 = gris oscuro (#505050)
-        const grayValue = Math.floor(Utils.map(this.weightFactor, 0, 5, 196, 64));
+        const grayValue = Math.floor(Utils.map(this.weightFactor, minWeight, maxWeight, 196, 64));
         const hex = grayValue.toString(16).padStart(2, '0');
         return `#${hex}${hex}${hex}`;
     }
@@ -131,14 +134,26 @@ class Enemy {
         // Establecer velocidad angular en el cuerpo físico
         Matter.Body.setAngularVelocity(this.physicsBody, rotationAmount);
 
-        // Aplicar propulsión en la dirección del frente
-        const thrustX = Math.cos(this.rotation) * this.thrustPower * this.mass;
-        const thrustY = Math.sin(this.rotation) * this.thrustPower * this.mass;
+        // Calcular velocidad actual
+        const velocity = this.physicsBody.velocity;
+        const currentSpeed = Math.sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
 
-        Matter.Body.applyForce(this.physicsBody, this.physicsBody.position, {
-            x: thrustX,
-            y: thrustY
-        });
+        // Solo aplicar propulsión si estamos por debajo de la velocidad límite
+        // Esto evita la aceleración indefinida
+        if (currentSpeed < this.propulsionSpeed) {
+            // Aplicar fuerza en la dirección de movimiento
+            const thrustX = Math.cos(this.rotation) * this.propulsionForce * this.mass;
+            const thrustY = Math.sin(this.rotation) * this.propulsionForce * this.mass;
+
+            Matter.Body.applyForce(this.physicsBody, this.physicsBody.position, {
+                x: thrustX,
+                y: thrustY
+            });
+        } else {
+            // Si excedemos la velocidad límite (por inercia o colisiones),
+            // la fricción del aire se encargará de reducirla naturalmente
+            // No aplicamos fuerzas adicionales
+        }
 
         // Actualizar el ángulo del frente (para la flecha indicadora)
         this.frontAngle = this.rotation;

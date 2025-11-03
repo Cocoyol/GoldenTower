@@ -21,7 +21,7 @@ class Game {
     constructor(canvas) {
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d');
-        
+
         // Configurar tamaño del canvas
         this.setupCanvas();
 
@@ -34,35 +34,35 @@ class Game {
                 border: DEFAULT_STAGE_BORDER_OPTIONS
             }
         );
-        
+
         // Estado del juego
         this.isRunning = false;
         this.isPaused = false;
-        
+
         // Elementos del juego
         this.base = null;
         this.currentProjectile = null;
         this.enemyPool = new EnemyPool(20);
-        
+
         // Sistemas
         this.physicsManager = null;
         this.particleSystem = new ParticleSystem();
         this.statistics = new Statistics();
-        
+
         // Sistema de arrastre
         this.isDragging = false;
         this.dragStart = { x: 0, y: 0 };
         this.dragCurrent = { x: 0, y: 0 };
-        
+
         // Timers
         this.enemySpawnTimer = 0;
         this.enemySpawnInterval = 3000; // 3 segundos
         this.projectileStaticTimer = 0;
         this.projectileStaticThreshold = 2000; // 2 segundos
-        
+
         // Configurar eventos
         this.setupEvents();
-        
+
         // Loop de animación
         this.lastTime = 0;
         this.animationId = null;
@@ -75,7 +75,7 @@ class Game {
         const container = this.canvas.parentElement;
         this.canvas.width = container.clientWidth;
         this.canvas.height = container.clientHeight;
-        
+
         this.width = this.canvas.width;
         this.height = this.canvas.height;
 
@@ -92,13 +92,13 @@ class Game {
     setupEvents() {
         // Mouse down - Iniciar arrastre
         this.canvas.addEventListener('mousedown', (e) => this.onMouseDown(e));
-        
+
         // Mouse move - Arrastrar
         this.canvas.addEventListener('mousemove', (e) => this.onMouseMove(e));
-        
+
         // Mouse up - Lanzar
         this.canvas.addEventListener('mouseup', (e) => this.onMouseUp(e));
-        
+
         // Resize
         window.addEventListener('resize', () => this.onResize());
     }
@@ -109,20 +109,20 @@ class Game {
     start() {
         this.isRunning = true;
         this.statistics.reset();
-        
+
         // Inicializar física con límites centralizados
         this.physicsManager = new PhysicsManager(this.stage);
         this.physicsManager.onCollision = (bodyA, bodyB) => this.onCollision(bodyA, bodyB);
-        
+
         // Crear la base en la posición correcta (3/10 desde abajo)
         const viewBounds = this.stage.getViewBounds();
         const baseX = this.stage.getViewCenter().x;
         const baseY = viewBounds.top + this.stage.getViewHeight() * 0.7; // 7/10 desde arriba = 3/10 desde abajo
         this.base = new Base(baseX, baseY);
-        
+
         // Crear el primer proyectil
         this.createNewProjectile();
-        
+
         // Iniciar loop de animación
         this.lastTime = performance.now();
         this.loop();
@@ -133,18 +133,18 @@ class Game {
      */
     stop() {
         this.isRunning = false;
-        
+
         if (this.animationId) {
             cancelAnimationFrame(this.animationId);
         }
-        
+
         // Limpiar
         if (this.enemyPool && this.physicsManager) {
             this.enemyPool.clear(this.physicsManager);
         }
         this.currentProjectile = null;
         this.particleSystem.clear();
-        
+
         if (this.physicsManager) {
             this.physicsManager.clear();
         }
@@ -211,13 +211,13 @@ class Game {
      */
     onCollision(bodyA, bodyB) {
         this.statistics.incrementCollisions();
-        
+
         // Crear partículas en el punto de colisión
         const posA = bodyA.position;
         const posB = bodyB.position;
         const collisionX = (posA.x + posB.x) / 2;
         const collisionY = (posA.y + posB.y) / 2;
-        
+
         // Emitir partículas desde ambos objetos
         if (this.currentProjectile && this.currentProjectile.physicsBody === bodyA) {
             this.particleSystem.emit(
@@ -237,11 +237,11 @@ class Game {
         if (!this.isRunning || !this.base || !this.currentProjectile || this.currentProjectile.isLaunched) {
             return;
         }
-        
+
         const rect = this.canvas.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
-        
+
         // Verificar si el click ocurrió sobre la base para habilitar el arrastre
         if (this.base.containsPoint(x, y)) {
             const basePos = this.base.getPosition();
@@ -257,11 +257,11 @@ class Game {
      */
     onMouseMove(e) {
         if (!this.isDragging) return;
-        
+
         const rect = this.canvas.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
-        
+
         this.dragCurrent = { x, y };
     }
 
@@ -270,32 +270,32 @@ class Game {
      */
     onMouseUp(e) {
         if (!this.isDragging) return;
-        
+
         this.isDragging = false;
         this.canvas.classList.remove('grabbing');
-        
+
         // Calcular fuerza y dirección
         const basePos = this.base.getPosition(); // Usar siempre el centro de la base como origen
         const dx = basePos.x - this.dragCurrent.x;
         const dy = basePos.y - this.dragCurrent.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
-        
+
         // Mínima distancia para lanzar
         if (distance < 20) {
             return;
         }
-        
+
         // Mapear distancia a fuerza (1-100, luego a velocidad)
-        const maxDragDistance = 150;
+        const maxDragDistance = 200;
         const force = Utils.clamp(distance, 0, maxDragDistance);
         const normalizedForce = Utils.map(force, 0, maxDragDistance, 0, 100);
         const velocity = Utils.map(normalizedForce, 0, 100, 0, 15);
-        
+
         // Calcular dirección normalizada
         const angle = Math.atan2(dy, dx);
         const vx = Math.cos(angle) * velocity;
         const vy = Math.sin(angle) * velocity;
-        
+
         // Lanzar proyectil
         this.currentProjectile.launch(vx, vy, this.physicsManager);
         this.statistics.incrementProjectiles();
@@ -306,7 +306,7 @@ class Game {
      */
     onResize() {
         this.setupCanvas();
-        
+
         if (this.physicsManager) {
             this.physicsManager.onStageResized();
         }
@@ -318,12 +318,12 @@ class Game {
     update(deltaTime) {
         // Actualizar física
         this.physicsManager.update();
-        
+
         // Actualizar proyectil actual
         if (this.currentProjectile) {
             if (this.currentProjectile.isLaunched) {
                 this.currentProjectile.update(this.currentProjectile.physicsBody);
-                
+
                 // Generar partículas mientras vuela
                 if (Math.random() < 0.3) {
                     this.particleSystem.emit(
@@ -335,16 +335,16 @@ class Game {
                         this.currentProjectile.shape
                     );
                 }
-                
+
                 // Verificar si está fuera del escenario
                 if (this.currentProjectile.isOutOfBounds(this.stage)) {
                     this.createNewProjectile();
                 }
                 // Verificar si está estático
-                else if (this.currentProjectile.physicsBody && 
-                         this.physicsManager.isBodyStatic(this.currentProjectile.physicsBody)) {
+                else if (this.currentProjectile.physicsBody &&
+                    this.physicsManager.isBodyStatic(this.currentProjectile.physicsBody)) {
                     this.projectileStaticTimer += deltaTime;
-                    
+
                     if (this.projectileStaticTimer >= this.projectileStaticThreshold) {
                         this.createNewProjectile();
                     }
@@ -355,19 +355,19 @@ class Game {
                 this.currentProjectile.update();
             }
         }
-        
+
         // Actualizar enemigos
         const activeEnemies = this.enemyPool.getActive();
         for (let i = activeEnemies.length - 1; i >= 0; i--) {
             const enemy = activeEnemies[i];
             enemy.update();
-            
+
             // Eliminar enemigos fuera del escenario
             if (enemy.isOutOfBounds(this.stage)) {
                 this.enemyPool.release(enemy, this.physicsManager);
             }
         }
-        
+
         // Spawn de enemigos
         this.enemySpawnTimer += deltaTime;
         if (this.enemySpawnTimer >= this.enemySpawnInterval) {
@@ -376,7 +376,7 @@ class Game {
             // Variar el intervalo
             this.enemySpawnInterval = Utils.random(2000, 4000);
         }
-        
+
         // Actualizar partículas
         this.particleSystem.update();
     }
@@ -392,28 +392,28 @@ class Game {
 
         // Borde opcional del escenario
         this.stage.renderBorder(this.ctx);
-        
+
         // Dibujar base
         if (this.base) {
             this.base.render(this.ctx);
         }
-        
+
         // Dibujar enemigos
         const activeEnemies = this.enemyPool.getActive();
         for (const enemy of activeEnemies) {
             enemy.render(this.ctx, SHOW_ENEMY_DIRECTION_ARROWS);
         }
-        
+
         // Dibujar proyectil actual
         if (this.currentProjectile) {
             this.currentProjectile.render(this.ctx);
         }
-        
+
         // Dibujar indicador de arrastre
         if (this.isDragging) {
             this.renderDragIndicator();
         }
-        
+
         // Dibujar partículas
         this.particleSystem.render(this.ctx);
     }
@@ -427,15 +427,15 @@ class Game {
         const dx = basePos.x - this.dragCurrent.x;
         const dy = basePos.y - this.dragCurrent.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
-        
+
         if (distance < 20) return;
-        
-        const maxDragDistance = 150;
+
+        const maxDragDistance = 250;
         const force = Utils.clamp(distance, 0, maxDragDistance);
         const normalizedForce = Math.round(Utils.map(force, 0, maxDragDistance, 0, 100));
-        
+
         this.ctx.save();
-        
+
         // Línea de dirección
         this.ctx.strokeStyle = 'rgba(255, 215, 0, 0.8)';
         this.ctx.lineWidth = 3;
@@ -444,13 +444,13 @@ class Game {
         this.ctx.moveTo(basePos.x, basePos.y);
         this.ctx.lineTo(this.dragCurrent.x, this.dragCurrent.y);
         this.ctx.stroke();
-        
+
         // Flecha en la dirección opuesta (dirección del lanzamiento)
         const angle = Math.atan2(dy, dx);
-        const arrowLength = 30;
-        const arrowX = basePos.x + Math.cos(angle) * (distance + 20);
-        const arrowY = basePos.y + Math.sin(angle) * (distance + 20);
-        
+        const arrowLength = 20;
+        const arrowX = basePos.x + Math.cos(angle) * (distance / 2 + 20);
+        const arrowY = basePos.y + Math.sin(angle) * (distance / 2 + 20);
+
         this.ctx.setLineDash([]);
         this.ctx.fillStyle = 'rgba(255, 215, 0, 0.9)';
         this.ctx.beginPath();
@@ -465,17 +465,17 @@ class Game {
         );
         this.ctx.closePath();
         this.ctx.fill();
-        
+
         // Mostrar fuerza
         this.ctx.font = 'bold 20px Arial';
         this.ctx.fillStyle = '#FFD700';
         this.ctx.textAlign = 'center';
         this.ctx.fillText(
             `${normalizedForce}%`,
-                    basePos.x,
-                    basePos.y - 30
+            basePos.x,
+            basePos.y - 30
         );
-        
+
         this.ctx.restore();
     }
 
@@ -484,15 +484,15 @@ class Game {
      */
     loop(currentTime = 0) {
         if (!this.isRunning) return;
-        
+
         // Calcular deltaTime
         const deltaTime = currentTime - this.lastTime;
         this.lastTime = currentTime;
-        
+
         // Actualizar y renderizar
         this.update(deltaTime);
         this.render();
-        
+
         // Siguiente frame
         this.animationId = requestAnimationFrame((time) => this.loop(time));
     }
